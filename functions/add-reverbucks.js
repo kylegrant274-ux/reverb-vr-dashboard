@@ -12,6 +12,7 @@ export async function onRequest(context) {
           'X-SecretKey': 'WS6N34UHIP64N56QEGX45UGXT59GQE9PDPFM9WTQ1AA7GMIEZ7'
         },
         body: JSON.stringify({
+          TitleId: '1620F0',
           PlayFabId: playerId,
           VirtualCurrency: 'RB',
           Amount: parseInt(amount)
@@ -19,6 +20,7 @@ export async function onRequest(context) {
       });
 
       const text = await response.text();
+      console.log('PlayFab Response:', text);
       
       try {
         const data = JSON.parse(text);
