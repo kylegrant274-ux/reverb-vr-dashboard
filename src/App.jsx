@@ -42,7 +42,7 @@ export default function ReverbucksDashboard() {
     setLoading(true);
     
     try {
-      const response = await fetch('/functions/api/add-reverbucks', {
+      const response = await fetch('/api/add-reverbucks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
