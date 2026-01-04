@@ -43,8 +43,8 @@ export async function onRequest(context) {
 }
 ```
 
-3. **Then run:**
+Then run:
 ```
 git add .
-git commit -m "add playfab integration"
+git commit -m "fix playfab function"
 git push
