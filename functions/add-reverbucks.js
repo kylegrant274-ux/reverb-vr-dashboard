@@ -41,10 +41,3 @@ export async function onRequest(context) {
 
   return new Response('Method not allowed', { status: 405 });
 }
-```
-
-Then run:
-```
-git add .
-git commit -m "fix playfab function"
-git push
