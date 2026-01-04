@@ -2,9 +2,26 @@ import React, { useState } from 'react';
 import { Send, Wallet, TrendingUp, Users, Settings, Home } from 'lucide-react';
 
 export default function Dashboard() {
+  const [page, setPage] = useState('home');
+  const [eventsSubpage, setEventsSubpage] = useState(null);
+  
+  // Reverbucks state
+  const [rbPlayerId, setRbPlayerId] = useState('');
+  const [rbAmount, setRbAmount] = useState('');
+  const [rbReason, setRbReason] = useState('');
+  const [rbAction, setRbAction] = useState('add');
+  const [rbTransactions, setRbTransactions] = useState([]);
+  const [rbResponseMessage, setRbResponseMessage] = useState('');
+  
+  // Items state
+  const [itemPlayerId, setItemPlayerId] = useState('');
+  const [itemId, setItemId] = useState('');
+  const [itemQuantity, setItemQuantity] = useState('');
+  const [itemAction, setItemAction] = useState('add');
+  const [itemTransactions, setItemTransactions] = useState([]);
+  const [itemResponseMessage, setItemResponseMessage] = useState('');
 
-
-  const handleSend = async () => {
+  const handleSendRB = async () => {
     if (!rbPlayerId || !rbAmount) {
       setRbResponseMessage('❌ Please fill in Player ID and amount');
       return;
@@ -27,7 +44,6 @@ export default function Dashboard() {
       });
 
       const data = await response.json();
-      console.log('Response:', data);
 
       if (data.success) {
         const newTransaction = {
@@ -43,9 +59,9 @@ export default function Dashboard() {
         setRbPlayerId('');
         setRbAmount('');
         setRbReason('');
-        setRbResponseMessage(`✅ ${rbAction === 'add' ? 'Sent' : 'Removed'} ${rbAmount} RB ${rbAction === 'add' ? 'to' : 'from'} ${rbPlayerId}!`);
+        setRbResponseMessage(`✅ ${rbAction === 'add' ? 'Sent' : 'Removed'} ${rbAmount} RB!`);
       } else {
-        setRbResponseMessage(`❌ Error: ${data.error || JSON.stringify(data)}`);
+        setRbResponseMessage(`❌ Error: ${data.error}`);
       }
     } catch (error) {
       setRbResponseMessage(`❌ Error: ${error.message}`);
@@ -74,7 +90,6 @@ export default function Dashboard() {
       });
 
       const data = await response.json();
-      console.log('Item Response:', data);
 
       if (data.success) {
         const newTransaction = {
@@ -90,9 +105,9 @@ export default function Dashboard() {
         setItemPlayerId('');
         setItemId('');
         setItemQuantity('');
-        setItemResponseMessage(`✅ Sent ${itemQuantity}x ${itemId} to ${itemPlayerId}!`);
+        setItemResponseMessage(`✅ Sent ${itemQuantity}x ${itemId}!`);
       } else {
-        setItemResponseMessage(`❌ Error: ${data.error || JSON.stringify(data)}`);
+        setItemResponseMessage(`❌ Error: ${data.error}`);
       }
     } catch (error) {
       setItemResponseMessage(`❌ Error: ${error.message}`);
@@ -100,12 +115,6 @@ export default function Dashboard() {
   };
 
   const totalRB = rbTransactions.reduce((sum, t) => sum + t.amount, 0);
-
-  const clearData = () => {
-    if (window.confirm('Clear all transactions?')) {
-      setTransactions([]);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-blue-950 to-black">
@@ -117,7 +126,7 @@ export default function Dashboard() {
           <div className="flex gap-8 items-center w-full justify-center">
             <nav className="flex gap-8">
               <button
-                onClick={() => setPage('home')}
+                onClick={() => { setPage('home'); setEventsSubpage(null); }}
                 className={`text-lg font-semibold transition-all ${
                   page === 'home' 
                     ? 'text-blue-400 border-b-2 border-blue-400 pb-1' 
@@ -127,10 +136,8 @@ export default function Dashboard() {
                 Home
               </button>
               
-
-
               <button
-                onClick={() => setPage('players')}
+                onClick={() => { setPage('players'); setEventsSubpage(null); }}
                 className={`text-lg font-semibold transition-all ${
                   page === 'players' 
                     ? 'text-blue-400 border-b-2 border-blue-400 pb-1' 
@@ -141,7 +148,7 @@ export default function Dashboard() {
               </button>
 
               <button
-                onClick={() => setPage('analytics')}
+                onClick={() => { setPage('analytics'); setEventsSubpage(null); }}
                 className={`text-lg font-semibold transition-all ${
                   page === 'analytics' 
                     ? 'text-blue-400 border-b-2 border-blue-400 pb-1' 
@@ -152,7 +159,7 @@ export default function Dashboard() {
               </button>
 
               <button
-                onClick={() => setPage('events')}
+                onClick={() => { setPage('events'); setEventsSubpage(null); }}
                 className={`text-lg font-semibold transition-all ${
                   page === 'events' 
                     ? 'text-blue-400 border-b-2 border-blue-400 pb-1' 
@@ -164,7 +171,7 @@ export default function Dashboard() {
             </nav>
 
             <button
-              onClick={() => setPage('settings')}
+              onClick={() => { setPage('settings'); setEventsSubpage(null); }}
               className="absolute right-8 text-blue-400 hover:text-blue-300 transition-all"
             >
               <Settings className="w-6 h-6" />
@@ -210,6 +217,94 @@ export default function Dashboard() {
                   <Users className="w-10 h-10 text-blue-400" />
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Players Page */}
+        {page === 'players' && (
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-8">Players</h1>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-4">
+                <p className="text-blue-300 text-sm">Total Players</p>
+                <p className="text-3xl font-bold text-white">1,254</p>
+              </div>
+              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-4">
+                <p className="text-blue-300 text-sm">Active Today</p>
+                <p className="text-3xl font-bold text-white">342</p>
+              </div>
+              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-4">
+                <p className="text-blue-300 text-sm">New Players</p>
+                <p className="text-3xl font-bold text-white">45</p>
+              </div>
+              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-4">
+                <p className="text-blue-300 text-sm">Avg Session</p>
+                <p className="text-3xl font-bold text-white">32m</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Analytics Page */}
+        {page === 'analytics' && (
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-8">Analytics</h1>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
+                <h3 className="text-lg font-bold text-white mb-4">Daily Active Users</h3>
+                <div className="h-40 flex items-end justify-around gap-2">
+                  {[40, 65, 55, 80, 70, 90, 75].map((h, i) => (
+                    <div key={i} className="bg-gradient-to-t from-blue-600 to-blue-400 rounded" style={{height: `${h}%`, width: '20px'}}></div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
+                <h3 className="text-lg font-bold text-white mb-4">Revenue</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-300">Reverbucks Sales</span>
+                    <span className="text-blue-400 font-bold">$2,450</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-300">Battle Pass</span>
+                    <span className="text-blue-400 font-bold">$890</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-300">Premium Items</span>
+                    <span className="text-blue-400 font-bold">$1,230</span>
+                  </div>
+                  <div className="border-t border-blue-500/30 pt-3 flex justify-between">
+                    <span className="text-white font-bold">Total</span>
+                    <span className="text-blue-400 font-bold">$4,570</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Events Page */}
+        {page === 'events' && !eventsSubpage && (
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-8">Events</h1>
+            
+            <div className="flex gap-6 mb-8">
+              <button
+                onClick={() => setEventsSubpage('reverbucks')}
+                className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all shadow-lg"
+              >
+                Reverbucks
+              </button>
+              <button
+                onClick={() => setEventsSubpage('items')}
+                className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all shadow-lg"
+              >
+                Items
+              </button>
             </div>
           </div>
         )}
@@ -272,7 +367,7 @@ export default function Dashboard() {
                     </div>
 
                     <button
-                      onClick={handleSend}
+                      onClick={handleSendRB}
                       className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-2 px-4 rounded transition-all"
                     >
                       {rbAction === 'add' ? 'Add' : 'Remove'} Reverbucks
@@ -420,105 +515,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Reverbucks Page */}
-        {page === 'reverbucks' && (
-          <div>
-            <div className="flex justify-between items-center mb-8">
-              <h1 className="text-4xl font-bold text-white">Reverbucks Manager</h1>
-              <button
-                onClick={clearData}
-                className="bg-red-600/20 hover:bg-red-600/40 text-red-300 border border-red-500/30 rounded px-4 py-2 transition-colors"
-              >
-                Clear All
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Form */}
-              <div className="lg:col-span-1">
-                <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
-                  <h2 className="text-xl font-bold text-white mb-4">Send Reverbucks</h2>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-blue-300 text-sm mb-2">Player ID</label>
-                      <input
-                        type="text"
-                        value={playerId}
-                        onChange={(e) => setPlayerId(e.target.value)}
-                        placeholder="Player ID"
-                        className="w-full bg-black border border-blue-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-blue-300 text-sm mb-2">Amount (RB)</label>
-                      <input
-                        type="number"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        placeholder="500"
-                        className="w-full bg-black border border-blue-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-blue-300 text-sm mb-2">Reason</label>
-                      <input
-                        type="text"
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        placeholder="Event reward"
-                        className="w-full bg-black border border-blue-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-
-                    <button
-                      onClick={handleSend}
-                      className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-2 px-4 rounded transition-all flex items-center justify-center gap-2"
-                    >
-                      <Send className="w-4 h-4" />
-                      Send
-                    </button>
-
-                    {responseMessage && (
-                      <div className="text-sm text-blue-300 mt-4 p-3 bg-blue-900/30 rounded border border-blue-500/30">
-                        {responseMessage}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Transactions */}
-              <div className="lg:col-span-2">
-                <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
-                  <h2 className="text-xl font-bold text-white mb-4">Recent Transactions</h2>
-                  
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {transactions.length === 0 ? (
-                      <p className="text-blue-300">No transactions yet</p>
-                    ) : (
-                      transactions.map((t) => (
-                        <div key={t.id} className="bg-blue-900/20 border border-blue-500/20 rounded p-3 flex items-center justify-between">
-                          <div>
-                            <p className="text-white font-semibold">{t.player}</p>
-                            <p className="text-blue-300 text-sm">{t.reason}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-blue-400 font-bold">+{t.amount} RB</p>
-                            <p className="text-gray-400 text-sm">{t.date}</p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Settings Page */}
         {page === 'settings' && (
           <div>
@@ -550,113 +546,6 @@ export default function Dashboard() {
                   Save Changes
                 </button>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Players Page */}
-        {page === 'players' && (
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-8">Players</h1>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-4">
-                <p className="text-blue-300 text-sm">Total Players</p>
-                <p className="text-3xl font-bold text-white">1,254</p>
-              </div>
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-4">
-                <p className="text-blue-300 text-sm">Active Today</p>
-                <p className="text-3xl font-bold text-white">342</p>
-              </div>
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-4">
-                <p className="text-blue-300 text-sm">New Players</p>
-                <p className="text-3xl font-bold text-white">45</p>
-              </div>
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-4">
-                <p className="text-blue-300 text-sm">Avg Session</p>
-                <p className="text-3xl font-bold text-white">32m</p>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Recent Activity</h2>
-              <div className="space-y-3">
-                <div className="flex justify-between text-gray-300 pb-3 border-b border-blue-500/20">
-                  <span>Player234 logged in</span>
-                  <span className="text-blue-300">2 min ago</span>
-                </div>
-                <div className="flex justify-between text-gray-300 pb-3 border-b border-blue-500/20">
-                  <span>Player891 completed level 5</span>
-                  <span className="text-blue-300">15 min ago</span>
-                </div>
-                <div className="flex justify-between text-gray-300 pb-3 border-b border-blue-500/20">
-                  <span>Player567 purchased item</span>
-                  <span className="text-blue-300">1 hour ago</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Analytics Page */}
-        {page === 'analytics' && (
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-8">Analytics</h1>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
-                <h3 className="text-lg font-bold text-white mb-4">Daily Active Users</h3>
-                <div className="h-40 flex items-end justify-around gap-2">
-                  {[40, 65, 55, 80, 70, 90, 75].map((h, i) => (
-                    <div key={i} className="bg-gradient-to-t from-blue-600 to-blue-400 rounded" style={{height: `${h}%`, width: '20px'}}></div>
-                  ))}
-                </div>
-                <p className="text-gray-400 text-sm mt-2">Last 7 days</p>
-              </div>
-
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
-                <h3 className="text-lg font-bold text-white mb-4">Revenue</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Reverbucks Sales</span>
-                    <span className="text-blue-400 font-bold">$2,450</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Battle Pass</span>
-                    <span className="text-blue-400 font-bold">$890</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Premium Items</span>
-                    <span className="text-blue-400 font-bold">$1,230</span>
-                  </div>
-                  <div className="border-t border-blue-500/30 pt-3 flex justify-between">
-                    <span className="text-white font-bold">Total</span>
-                    <span className="text-blue-400 font-bold">$4,570</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-                {/* Events Page */}
-        {page === 'events' && !eventsSubpage && (
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-8">Events</h1>
-            
-            <div className="flex gap-6 mb-8">
-              <button
-                onClick={() => setEventsSubpage('reverbucks')}
-                className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all shadow-lg"
-              >
-                Reverbucks
-              </button>
-              <button
-                onClick={() => setEventsSubpage('items')}
-                className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all shadow-lg"
-              >
-                Items
-              </button>
             </div>
           </div>
         )}
