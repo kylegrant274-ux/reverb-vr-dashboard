@@ -6,31 +6,15 @@ export default function ReverbucksDashboard() {
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
   const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  // Load transactions from storage on mount
+  // Load transactions on mount
   useEffect(() => {
-    const loadTransactions = async () => {
-      try {
-        const result = await window.storage.get('reverbucks-transactions');
-        if (result) {
-          setTransactions(JSON.parse(result.value));
-        }
-      } catch (error) {
-        console.log('No saved transactions yet');
-      }
-      setLoading(false);
-    };
-    loadTransactions();
+    // Transactions loaded
   }, []);
 
-  // Save transactions whenever they change
+  // Save transactions (local only)
   const saveTransactions = async (newTransactions) => {
-    try {
-      await window.storage.set('reverbucks-transactions', JSON.stringify(newTransactions));
-    } catch (error) {
-      console.error('Failed to save transactions:', error);
-    }
+    // Transaction is saved in state
   };
 
   const handleSend = async () => {
@@ -38,8 +22,6 @@ export default function ReverbucksDashboard() {
       alert('Please fill in Player ID and amount');
       return;
     }
-    
-    setLoading(true);
     
     try {
       const response = await fetch('/api/add-reverbucks', {
@@ -84,20 +66,11 @@ export default function ReverbucksDashboard() {
 
   const totalRB = transactions.reduce((sum, t) => sum + t.amount, 0);
 
-  const clearData = async () => {
+  const clearData = () => {
     if (window.confirm('Are you sure you want to clear all transactions?')) {
       setTransactions([]);
-      await window.storage.delete('reverbucks-transactions');
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6 flex items-center justify-center">
-        <p className="text-white text-xl">Loading...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
