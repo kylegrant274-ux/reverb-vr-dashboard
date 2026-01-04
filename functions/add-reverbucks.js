@@ -18,15 +18,23 @@ export async function onRequest(context) {
         })
       });
 
-      const data = await response.json();
+      const text = await response.text();
       
-      if (data.code === 'OK' || response.ok) {
-        return new Response(JSON.stringify({ success: true, data }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      } else {
-        return new Response(JSON.stringify({ success: false, error: data.errorMessage || 'Failed' }), {
+      try {
+        const data = JSON.parse(text);
+        if (data.code === 'OK') {
+          return new Response(JSON.stringify({ success: true, data }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } else {
+          return new Response(JSON.stringify({ success: false, error: data.errorMessage || 'PlayFab error' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      } catch (parseError) {
+        return new Response(JSON.stringify({ success: false, error: `Invalid response: ${text}` }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' }
         });
