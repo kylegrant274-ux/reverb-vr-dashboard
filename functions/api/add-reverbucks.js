@@ -10,8 +10,6 @@ export async function onRequestPost(context) {
       Amount: parseInt(amount)
     };
 
-    console.log('Sending to PlayFab:', requestBody);
-
     const response = await fetch('https://1620F0.playfabapi.com/Server/AddUserVirtualCurrency', {
       method: 'POST',
       headers: {
@@ -22,11 +20,9 @@ export async function onRequestPost(context) {
     });
 
     const text = await response.text();
-    console.log('PlayFab raw response:', text, 'Status:', response.status);
-
     let data = JSON.parse(text);
 
-    if (data.code === 'OK') {
+    if (data.status === 'OK' || data.code === 200) {
       return new Response(JSON.stringify({ success: true, data }), {
         headers: { 'Content-Type': 'application/json' }
       });
