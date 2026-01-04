@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Send, Wallet, TrendingUp, Users } from 'lucide-react';
 
 export default function ReverbucksDashboard() {
@@ -6,16 +6,6 @@ export default function ReverbucksDashboard() {
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
   const [transactions, setTransactions] = useState([]);
-
-  // Load transactions on mount
-  useEffect(() => {
-    // Transactions loaded
-  }, []);
-
-  // Save transactions (local only)
-  const saveTransactions = async (newTransactions) => {
-    // Transaction is saved in state
-  };
 
   const handleSend = async () => {
     if (!playerId || !amount) {
@@ -49,7 +39,6 @@ export default function ReverbucksDashboard() {
         
         const updatedTransactions = [newTransaction, ...transactions];
         setTransactions(updatedTransactions);
-        saveTransactions(updatedTransactions);
         setPlayerId('');
         setAmount('');
         setReason('');
@@ -59,8 +48,6 @@ export default function ReverbucksDashboard() {
       }
     } catch (error) {
       alert(`❌ Error: ${error.message}`);
-    } finally {
-      setLoading(false);
     }
   };
 
