@@ -1,13 +1,13 @@
 export async function onRequestPost(context) {
   const { request } = context;
   
-  const { playerId, itemId, quantity, reason } = await request.json();
+  const { playerId, itemId, quantity } = await request.json();
 
   try {
     const requestBody = {
       PlayFabId: playerId,
       ItemIds: [itemId],
-      Annotation: reason || 'Event gift'
+      GetCharacterInventories: false
     };
 
     const response = await fetch('https://1620F0.playfabapi.com/Server/GrantItemsToUser', {

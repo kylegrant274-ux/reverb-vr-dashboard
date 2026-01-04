@@ -2,23 +2,16 @@ import React, { useState } from 'react';
 import { Send, Wallet, TrendingUp, Users, Settings, Home } from 'lucide-react';
 
 export default function Dashboard() {
-  const [page, setPage] = useState('home');
-  const [eventsSubpage, setEventsSubpage] = useState(null);
-  const [playerId, setPlayerId] = useState('');
-  const [amount, setAmount] = useState('');
-  const [reason, setReason] = useState('');
-  const [action, setAction] = useState('add');
-  const [itemId, setItemId] = useState('');
-  const [transactions, setTransactions] = useState([]);
-  const [responseMessage, setResponseMessage] = useState('');
+
 
   const handleSend = async () => {
-    if (!playerId || !amount) {
-      setResponseMessage('❌ Please fill in Player ID and amount');
+    if (!rbPlayerId || !rbAmount) {
+      setRbResponseMessage('❌ Please fill in Player ID and amount');
       return;
     }
     
-    setResponseMessage('⏳ Sending...');
+    setRbResponseMessage('⏳ Sending...');
+    const amountToSend = rbAction === 'remove' ? -parseInt(rbAmount) : parseInt(rbAmount);
     
     try {
       const response = await fetch('/api/add-reverbucks', {
@@ -27,9 +20,9 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          playerId: playerId,
-          amount: parseInt(amount),
-          reason: reason || 'Manual grant'
+          playerId: rbPlayerId,
+          amount: amountToSend,
+          reason: rbReason || 'Manual grant'
         })
       });
 
@@ -38,27 +31,75 @@ export default function Dashboard() {
 
       if (data.success) {
         const newTransaction = {
-          id: transactions.length + 1,
-          player: playerId,
-          amount: parseInt(amount),
-          reason: reason || 'Manual grant',
+          id: rbTransactions.length + 1,
+          player: rbPlayerId,
+          amount: parseInt(rbAmount),
+          action: rbAction,
+          reason: rbReason || 'Manual grant',
           date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         };
         
-        setTransactions([newTransaction, ...transactions]);
-        setPlayerId('');
-        setAmount('');
-        setReason('');
-        setResponseMessage(`✅ Sent ${amount} RB to ${playerId}!`);
+        setRbTransactions([newTransaction, ...rbTransactions]);
+        setRbPlayerId('');
+        setRbAmount('');
+        setRbReason('');
+        setRbResponseMessage(`✅ ${rbAction === 'add' ? 'Sent' : 'Removed'} ${rbAmount} RB ${rbAction === 'add' ? 'to' : 'from'} ${rbPlayerId}!`);
       } else {
-        setResponseMessage(`❌ Error: ${data.error || JSON.stringify(data)}`);
+        setRbResponseMessage(`❌ Error: ${data.error || JSON.stringify(data)}`);
       }
     } catch (error) {
-      setResponseMessage(`❌ Error: ${error.message}`);
+      setRbResponseMessage(`❌ Error: ${error.message}`);
     }
   };
 
-  const totalRB = transactions.reduce((sum, t) => sum + t.amount, 0);
+  const handleSendItem = async () => {
+    if (!itemPlayerId || !itemId || !itemQuantity) {
+      setItemResponseMessage('❌ Please fill in all fields');
+      return;
+    }
+    
+    setItemResponseMessage('⏳ Sending...');
+    
+    try {
+      const response = await fetch('/api/add-item', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playerId: itemPlayerId,
+          itemId: itemId,
+          quantity: parseInt(itemQuantity)
+        })
+      });
+
+      const data = await response.json();
+      console.log('Item Response:', data);
+
+      if (data.success) {
+        const newTransaction = {
+          id: itemTransactions.length + 1,
+          player: itemPlayerId,
+          itemId: itemId,
+          quantity: parseInt(itemQuantity),
+          action: itemAction,
+          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        };
+        
+        setItemTransactions([newTransaction, ...itemTransactions]);
+        setItemPlayerId('');
+        setItemId('');
+        setItemQuantity('');
+        setItemResponseMessage(`✅ Sent ${itemQuantity}x ${itemId} to ${itemPlayerId}!`);
+      } else {
+        setItemResponseMessage(`❌ Error: ${data.error || JSON.stringify(data)}`);
+      }
+    } catch (error) {
+      setItemResponseMessage(`❌ Error: ${error.message}`);
+    }
+  };
+
+  const totalRB = rbTransactions.reduce((sum, t) => sum + t.amount, 0);
 
   const clearData = () => {
     if (window.confirm('Clear all transactions?')) {
@@ -154,7 +195,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-blue-300 text-sm mb-1">Total Transactions</p>
-                    <p className="text-4xl font-bold text-white">{transactions.length}</p>
+                    <p className="text-4xl font-bold text-white">{rbTransactions.length}</p>
                   </div>
                   <Send className="w-10 h-10 text-blue-400" />
                 </div>
@@ -164,7 +205,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-blue-300 text-sm mb-1">Active Players</p>
-                    <p className="text-4xl font-bold text-white">{new Set(transactions.map(t => t.player)).size}</p>
+                    <p className="text-4xl font-bold text-white">{new Set(rbTransactions.map(t => t.player)).size}</p>
                   </div>
                   <Users className="w-10 h-10 text-blue-400" />
                 </div>
@@ -189,8 +230,8 @@ export default function Dashboard() {
                       <label className="block text-blue-300 text-sm mb-2">Player ID</label>
                       <input
                         type="text"
-                        value={playerId}
-                        onChange={(e) => setPlayerId(e.target.value)}
+                        value={rbPlayerId}
+                        onChange={(e) => setRbPlayerId(e.target.value)}
                         placeholder="Player ID"
                         className="w-full bg-black border border-blue-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                       />
@@ -199,8 +240,8 @@ export default function Dashboard() {
                     <div>
                       <label className="block text-blue-300 text-sm mb-2">Action</label>
                       <select
-                        value={action}
-                        onChange={(e) => setAction(e.target.value)}
+                        value={rbAction}
+                        onChange={(e) => setRbAction(e.target.value)}
                         className="w-full bg-black border border-blue-500/30 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
                       >
                         <option value="add">Add</option>
@@ -212,8 +253,8 @@ export default function Dashboard() {
                       <label className="block text-blue-300 text-sm mb-2">Amount (RB)</label>
                       <input
                         type="number"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
+                        value={rbAmount}
+                        onChange={(e) => setRbAmount(e.target.value)}
                         placeholder="500"
                         className="w-full bg-black border border-blue-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                       />
@@ -223,8 +264,8 @@ export default function Dashboard() {
                       <label className="block text-blue-300 text-sm mb-2">Reason</label>
                       <input
                         type="text"
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
+                        value={rbReason}
+                        onChange={(e) => setRbReason(e.target.value)}
                         placeholder="Event reward"
                         className="w-full bg-black border border-blue-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                       />
@@ -234,12 +275,12 @@ export default function Dashboard() {
                       onClick={handleSend}
                       className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-2 px-4 rounded transition-all"
                     >
-                      {action === 'add' ? 'Add' : 'Remove'} Reverbucks
+                      {rbAction === 'add' ? 'Add' : 'Remove'} Reverbucks
                     </button>
 
-                    {responseMessage && (
+                    {rbResponseMessage && (
                       <div className="text-sm text-blue-300 mt-4 p-3 bg-blue-900/30 rounded border border-blue-500/30">
-                        {responseMessage}
+                        {rbResponseMessage}
                       </div>
                     )}
                   </div>
@@ -251,17 +292,19 @@ export default function Dashboard() {
                   <h2 className="text-xl font-bold text-white mb-4">Recent Transactions</h2>
                   
                   <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {transactions.length === 0 ? (
+                    {rbTransactions.length === 0 ? (
                       <p className="text-blue-300">No transactions yet</p>
                     ) : (
-                      transactions.map((t) => (
+                      rbTransactions.map((t) => (
                         <div key={t.id} className="bg-blue-900/20 border border-blue-500/20 rounded p-3 flex items-center justify-between">
                           <div>
                             <p className="text-white font-semibold">{t.player}</p>
                             <p className="text-blue-300 text-sm">{t.reason}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-blue-400 font-bold">+{t.amount} RB</p>
+                            <p className={`font-bold ${t.action === 'add' ? 'text-green-400' : 'text-red-400'}`}>
+                              {t.action === 'add' ? '+' : '-'}{t.amount} RB
+                            </p>
                             <p className="text-gray-400 text-sm">{t.date}</p>
                           </div>
                         </div>
@@ -290,8 +333,8 @@ export default function Dashboard() {
                       <label className="block text-purple-300 text-sm mb-2">Player ID</label>
                       <input
                         type="text"
-                        value={playerId}
-                        onChange={(e) => setPlayerId(e.target.value)}
+                        value={itemPlayerId}
+                        onChange={(e) => setItemPlayerId(e.target.value)}
                         placeholder="Player ID"
                         className="w-full bg-black border border-purple-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
                       />
@@ -309,25 +352,38 @@ export default function Dashboard() {
                     </div>
 
                     <div>
+                      <label className="block text-purple-300 text-sm mb-2">Action</label>
+                      <select
+                        value={itemAction}
+                        onChange={(e) => setItemAction(e.target.value)}
+                        className="w-full bg-black border border-purple-500/30 rounded px-3 py-2 text-white focus:outline-none focus:border-purple-500"
+                      >
+                        <option value="add">Add</option>
+                        <option value="remove">Remove</option>
+                      </select>
+                    </div>
+
+                    <div>
                       <label className="block text-purple-300 text-sm mb-2">Quantity</label>
                       <input
                         type="number"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
+                        value={itemQuantity}
+                        onChange={(e) => setItemQuantity(e.target.value)}
                         placeholder="1"
                         className="w-full bg-black border border-purple-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
                       />
                     </div>
 
                     <button
+                      onClick={handleSendItem}
                       className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-2 px-4 rounded transition-all"
                     >
-                      Send Item
+                      {itemAction === 'add' ? 'Send' : 'Remove'} Item
                     </button>
 
-                    {responseMessage && (
+                    {itemResponseMessage && (
                       <div className="text-sm text-purple-300 mt-4 p-3 bg-purple-900/30 rounded border border-purple-500/30">
-                        {responseMessage}
+                        {itemResponseMessage}
                       </div>
                     )}
                   </div>
@@ -339,7 +395,24 @@ export default function Dashboard() {
                   <h2 className="text-xl font-bold text-white mb-4">Recent Item Distributions</h2>
                   
                   <div className="space-y-2 max-h-96 overflow-y-auto">
-                    <p className="text-purple-300">No items distributed yet</p>
+                    {itemTransactions.length === 0 ? (
+                      <p className="text-purple-300">No items distributed yet</p>
+                    ) : (
+                      itemTransactions.map((t) => (
+                        <div key={t.id} className="bg-purple-900/20 border border-purple-500/20 rounded p-3 flex items-center justify-between">
+                          <div>
+                            <p className="text-white font-semibold">{t.player}</p>
+                            <p className="text-purple-300 text-sm">Item ID: {t.itemId}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className={`font-bold ${t.action === 'add' ? 'text-green-400' : 'text-red-400'}`}>
+                              {t.action === 'add' ? '+' : '-'}{t.quantity}x
+                            </p>
+                            <p className="text-gray-400 text-sm">{t.date}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
