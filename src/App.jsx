@@ -3,9 +3,12 @@ import { Send, Wallet, TrendingUp, Users, Settings, Home } from 'lucide-react';
 
 export default function Dashboard() {
   const [page, setPage] = useState('home');
+  const [eventsSubpage, setEventsSubpage] = useState(null);
   const [playerId, setPlayerId] = useState('');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
+  const [action, setAction] = useState('add');
+  const [itemId, setItemId] = useState('');
   const [transactions, setTransactions] = useState([]);
   const [responseMessage, setResponseMessage] = useState('');
 
@@ -83,16 +86,7 @@ export default function Dashboard() {
                 Home
               </button>
               
-              <button
-                onClick={() => setPage('reverbucks')}
-                className={`text-lg font-semibold transition-all ${
-                  page === 'reverbucks' 
-                    ? 'text-blue-400 border-b-2 border-blue-400 pb-1' 
-                    : 'text-gray-300 hover:text-blue-300'
-                }`}
-              >
-                Reverbucks
-              </button>
+
 
               <button
                 onClick={() => setPage('players')}
@@ -173,6 +167,180 @@ export default function Dashboard() {
                     <p className="text-4xl font-bold text-white">{new Set(transactions.map(t => t.player)).size}</p>
                   </div>
                   <Users className="w-10 h-10 text-blue-400" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Events Reverbucks Subpage */}
+        {page === 'events' && eventsSubpage === 'reverbucks' && (
+          <div>
+            <button onClick={() => setEventsSubpage(null)} className="text-blue-400 hover:text-blue-300 mb-6 text-lg">← Back</button>
+            <h1 className="text-4xl font-bold text-white mb-8">Distribute Reverbucks</h1>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-1">
+                <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
+                  <h2 className="text-xl font-bold text-white mb-4">Send Reverbucks</h2>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-blue-300 text-sm mb-2">Player ID</label>
+                      <input
+                        type="text"
+                        value={playerId}
+                        onChange={(e) => setPlayerId(e.target.value)}
+                        placeholder="Player ID"
+                        className="w-full bg-black border border-blue-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-blue-300 text-sm mb-2">Action</label>
+                      <select
+                        value={action}
+                        onChange={(e) => setAction(e.target.value)}
+                        className="w-full bg-black border border-blue-500/30 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                      >
+                        <option value="add">Add</option>
+                        <option value="remove">Remove</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-blue-300 text-sm mb-2">Amount (RB)</label>
+                      <input
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="500"
+                        className="w-full bg-black border border-blue-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-blue-300 text-sm mb-2">Reason</label>
+                      <input
+                        type="text"
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="Event reward"
+                        className="w-full bg-black border border-blue-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleSend}
+                      className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-2 px-4 rounded transition-all"
+                    >
+                      {action === 'add' ? 'Add' : 'Remove'} Reverbucks
+                    </button>
+
+                    {responseMessage && (
+                      <div className="text-sm text-blue-300 mt-4 p-3 bg-blue-900/30 rounded border border-blue-500/30">
+                        {responseMessage}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-2">
+                <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
+                  <h2 className="text-xl font-bold text-white mb-4">Recent Transactions</h2>
+                  
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {transactions.length === 0 ? (
+                      <p className="text-blue-300">No transactions yet</p>
+                    ) : (
+                      transactions.map((t) => (
+                        <div key={t.id} className="bg-blue-900/20 border border-blue-500/20 rounded p-3 flex items-center justify-between">
+                          <div>
+                            <p className="text-white font-semibold">{t.player}</p>
+                            <p className="text-blue-300 text-sm">{t.reason}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-blue-400 font-bold">+{t.amount} RB</p>
+                            <p className="text-gray-400 text-sm">{t.date}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Events Items Subpage */}
+        {page === 'events' && eventsSubpage === 'items' && (
+          <div>
+            <button onClick={() => setEventsSubpage(null)} className="text-purple-400 hover:text-purple-300 mb-6 text-lg">← Back</button>
+            <h1 className="text-4xl font-bold text-white mb-8">Distribute Items</h1>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-1">
+                <div className="bg-gradient-to-br from-purple-900/40 to-purple-800/20 border border-purple-500/30 rounded-lg p-6">
+                  <h2 className="text-xl font-bold text-white mb-4">Send Item</h2>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-purple-300 text-sm mb-2">Player ID</label>
+                      <input
+                        type="text"
+                        value={playerId}
+                        onChange={(e) => setPlayerId(e.target.value)}
+                        placeholder="Player ID"
+                        className="w-full bg-black border border-purple-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-purple-300 text-sm mb-2">Item ID</label>
+                      <input
+                        type="text"
+                        value={itemId}
+                        onChange={(e) => setItemId(e.target.value)}
+                        placeholder="Item ID"
+                        className="w-full bg-black border border-purple-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-purple-300 text-sm mb-2">Quantity</label>
+                      <input
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="1"
+                        className="w-full bg-black border border-purple-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <button
+                      className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-2 px-4 rounded transition-all"
+                    >
+                      Send Item
+                    </button>
+
+                    {responseMessage && (
+                      <div className="text-sm text-purple-300 mt-4 p-3 bg-purple-900/30 rounded border border-purple-500/30">
+                        {responseMessage}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-2">
+                <div className="bg-gradient-to-br from-purple-900/40 to-purple-800/20 border border-purple-500/30 rounded-lg p-6">
+                  <h2 className="text-xl font-bold text-white mb-4">Recent Item Distributions</h2>
+                  
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    <p className="text-purple-300">No items distributed yet</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -398,48 +566,24 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Events Page */}
-        {page === 'events' && (
+                {/* Events Page */}
+        {page === 'events' && !eventsSubpage && (
           <div>
             <h1 className="text-4xl font-bold text-white mb-8">Events</h1>
             
-            <button className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-2 px-6 rounded mb-6">
-              Create Event
-            </button>
-
-            <div className="space-y-4">
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-bold text-white">Summer Event</h3>
-                    <p className="text-gray-400 text-sm mt-1">Double Reverbucks Weekend</p>
-                  </div>
-                  <span className="bg-green-500/20 text-green-300 px-3 py-1 rounded text-sm">Active</span>
-                </div>
-                <p className="text-blue-300 text-sm mt-4">Ends in 3 days • 45,230 participants</p>
-              </div>
-
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-bold text-white">Halloween Cosmetics</h3>
-                    <p className="text-gray-400 text-sm mt-1">Limited cosmetic shop</p>
-                  </div>
-                  <span className="bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded text-sm">Scheduled</span>
-                </div>
-                <p className="text-blue-300 text-sm mt-4">Starts in 5 days • Expected: 12,000 participants</p>
-              </div>
-
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-bold text-white">Spring Blast</h3>
-                    <p className="text-gray-400 text-sm mt-1">Free skin giveaway</p>
-                  </div>
-                  <span className="bg-gray-500/20 text-gray-300 px-3 py-1 rounded text-sm">Ended</span>
-                </div>
-                <p className="text-blue-300 text-sm mt-4">Ended 2 days ago • 89,450 participants</p>
-              </div>
+            <div className="flex gap-6 mb-8">
+              <button
+                onClick={() => setEventsSubpage('reverbucks')}
+                className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all shadow-lg"
+              >
+                Reverbucks
+              </button>
+              <button
+                onClick={() => setEventsSubpage('items')}
+                className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all shadow-lg"
+              >
+                Items
+              </button>
             </div>
           </div>
         )}
