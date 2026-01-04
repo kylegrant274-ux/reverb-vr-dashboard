@@ -20,27 +20,15 @@ export async function onRequest(context) {
       });
 
       const text = await response.text();
-      console.log('PlayFab Response:', text);
       
-      try {
-        const data = JSON.parse(text);
-        if (data.code === 'OK') {
-          return new Response(JSON.stringify({ success: true, data }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-          });
-        } else {
-          return new Response(JSON.stringify({ success: false, error: data.errorMessage || 'PlayFab error' }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' }
-          });
-        }
-      } catch (parseError) {
-        return new Response(JSON.stringify({ success: false, error: `Invalid response: ${text}` }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
+      return new Response(JSON.stringify({ 
+        success: false, 
+        status: response.status,
+        rawResponse: text 
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
     } catch (error) {
       return new Response(JSON.stringify({ success: false, error: error.message }), {
         status: 500,
