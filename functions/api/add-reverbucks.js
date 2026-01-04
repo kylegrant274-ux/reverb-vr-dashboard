@@ -4,24 +4,38 @@ export async function onRequestPost(context) {
   const { playerId, amount, reason } = await request.json();
 
   try {
+    const requestBody = {
+      PlayFabId: playerId,
+      VirtualCurrency: 'RB',
+      Amount: parseInt(amount)
+    };
+
+    console.log('Sending to PlayFab:', requestBody);
+
     const response = await fetch('https://1620F0.playfabapi.com/Server/AddUserVirtualCurrency', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-SecretKey': 'YOUR_REAL_SECRET_KEY_HERE'
+        'X-SecretKey': 'WS6N34UHIP64N56QEGX45UGXT59GQE9PDPFM9WTQ1AA7GMIEZ7'
       },
-      body: JSON.stringify({
-        TitleId: '1620F0',
-        PlayFabId: playerId,
-        VirtualCurrency: 'RB',
-        Amount: parseInt(amount)
-      })
+      body: JSON.stringify(requestBody)
     });
 
-    const data = await response.json();
-    return new Response(JSON.stringify({ success: true, data }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const text = await response.text();
+    console.log('PlayFab raw response:', text, 'Status:', response.status);
+
+    let data = JSON.parse(text);
+
+    if (data.code === 'OK') {
+      return new Response(JSON.stringify({ success: true, data }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } else {
+      return new Response(JSON.stringify({ success: false, error: data.errorMessage || JSON.stringify(data) }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
   } catch (error) {
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       status: 500,
