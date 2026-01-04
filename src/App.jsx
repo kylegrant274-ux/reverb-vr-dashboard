@@ -28,7 +28,6 @@ export default function Dashboard() {
     }
     
     setRbResponseMessage('⏳ Sending...');
-    const amountToSend = rbAction === 'remove' ? -parseInt(rbAmount) : parseInt(rbAmount);
     
     try {
       const response = await fetch('/api/add-reverbucks', {
@@ -38,7 +37,8 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           playerId: rbPlayerId,
-          amount: amountToSend,
+          amount: parseInt(rbAmount),
+          action: rbAction,
           reason: rbReason || 'Manual grant'
         })
       });
@@ -446,34 +446,13 @@ export default function Dashboard() {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-purple-300 text-sm mb-2">Action</label>
-                      <select
-                        value={itemAction}
-                        onChange={(e) => setItemAction(e.target.value)}
-                        className="w-full bg-black border border-purple-500/30 rounded px-3 py-2 text-white focus:outline-none focus:border-purple-500"
-                      >
-                        <option value="add">Add</option>
-                        <option value="remove">Remove</option>
-                      </select>
-                    </div>
 
-                    <div>
-                      <label className="block text-purple-300 text-sm mb-2">Quantity</label>
-                      <input
-                        type="number"
-                        value={itemQuantity}
-                        onChange={(e) => setItemQuantity(e.target.value)}
-                        placeholder="1"
-                        className="w-full bg-black border border-purple-500/30 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                      />
-                    </div>
 
                     <button
                       onClick={handleSendItem}
                       className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-2 px-4 rounded transition-all"
                     >
-                      {itemAction === 'add' ? 'Send' : 'Remove'} Item
+                      Send Item
                     </button>
 
                     {itemResponseMessage && (
@@ -500,9 +479,7 @@ export default function Dashboard() {
                             <p className="text-purple-300 text-sm">Item ID: {t.itemId}</p>
                           </div>
                           <div className="text-right">
-                            <p className={`font-bold ${t.action === 'add' ? 'text-green-400' : 'text-red-400'}`}>
-                              {t.action === 'add' ? '+' : '-'}{t.quantity}x
-                            </p>
+                            <p className="text-green-400 font-bold">Sent ✓</p>
                             <p className="text-gray-400 text-sm">{t.date}</p>
                           </div>
                         </div>
