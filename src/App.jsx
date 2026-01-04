@@ -1,45 +1,120 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send, Wallet, TrendingUp, Users } from 'lucide-react';
 
 export default function ReverbucksDashboard() {
   const [playerId, setPlayerId] = useState('');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
-  const [transactions, setTransactions] = useState([
-    { id: 1, player: 'Player123', amount: 500, reason: 'Sign-up bonus', date: 'Jan 4' },
-    { id: 2, player: 'Player456', amount: 1000, reason: 'Event reward', date: 'Jan 3' },
-  ]);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleSend = () => {
+  // Load transactions from storage on mount
+  useEffect(() => {
+    const loadTransactions = async () => {
+      try {
+        const result = await window.storage.get('reverbucks-transactions');
+        if (result) {
+          setTransactions(JSON.parse(result.value));
+        }
+      } catch (error) {
+        console.log('No saved transactions yet');
+      }
+      setLoading(false);
+    };
+    loadTransactions();
+  }, []);
+
+  // Save transactions whenever they change
+  const saveTransactions = async (newTransactions) => {
+    try {
+      await window.storage.set('reverbucks-transactions', JSON.stringify(newTransactions));
+    } catch (error) {
+      console.error('Failed to save transactions:', error);
+    }
+  };
+
+  const handleSend = async () => {
     if (!playerId || !amount) {
       alert('Please fill in Player ID and amount');
       return;
     }
     
-    const newTransaction = {
-      id: transactions.length + 1,
-      player: playerId,
-      amount: parseInt(amount),
-      reason: reason || 'Manual grant',
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    };
+    setLoading(true);
     
-    setTransactions([newTransaction, ...transactions]);
-    setPlayerId('');
-    setAmount('');
-    setReason('');
+    try {
+      const response = await fetch('/api/add-reverbucks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playerId: playerId,
+          amount: parseInt(amount),
+          reason: reason || 'Manual grant'
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const newTransaction = {
+          id: transactions.length + 1,
+          player: playerId,
+          amount: parseInt(amount),
+          reason: reason || 'Manual grant',
+          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        };
+        
+        const updatedTransactions = [newTransaction, ...transactions];
+        setTransactions(updatedTransactions);
+        saveTransactions(updatedTransactions);
+        setPlayerId('');
+        setAmount('');
+        setReason('');
+        alert(`✓ Sent ${amount} RB to ${playerId}!`);
+      } else {
+        alert(`❌ Error: ${data.error}`);
+      }
+    } catch (error) {
+      alert(`❌ Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const totalRB = transactions.reduce((sum, t) => sum + t.amount, 0);
+
+  const clearData = async () => {
+    if (window.confirm('Are you sure you want to clear all transactions?')) {
+      setTransactions([]);
+      await window.storage.delete('reverbucks-transactions');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6 flex items-center justify-center">
+        <p className="text-white text-xl">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Wallet className="w-10 h-10 text-purple-400" />
-            <h1 className="text-4xl font-bold text-white">Reverbucks Manager</h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <Wallet className="w-10 h-10 text-purple-400" />
+              <h1 className="text-4xl font-bold text-white">Reverbucks Manager</h1>
+            </div>
+            <button
+              onClick={clearData}
+              className="text-sm bg-red-600/20 hover:bg-red-600/40 text-red-300 border border-red-500/30 rounded px-3 py-1 transition-colors"
+            >
+              Clear Data
+            </button>
           </div>
           <p className="text-purple-300">Distribute in-game currency to your players</p>
         </div>
