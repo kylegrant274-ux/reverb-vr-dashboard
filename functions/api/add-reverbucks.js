@@ -29,10 +29,3 @@ export async function onRequestPost(context) {
     });
   }
 }
-```
-
-Push it:
-```
-git add .
-git commit -m "fix function handler"
-git push
