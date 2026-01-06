@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, Wallet, TrendingUp, Users, Settings, Home } from 'lucide-react';
+import { Send, Wallet, TrendingUp, Users, Settings } from 'lucide-react';
 
 export default function Dashboard() {
   const [page, setPage] = useState('home');
@@ -68,12 +68,13 @@ export default function Dashboard() {
   };
 
   const handleSendItem = async () => {
-    if (!itemPlayerId || !itemId || !itemQuantity) {
-      setItemResponseMessage('❌ Please fill in all fields');
+    if (!itemPlayerId || !itemId) {
+      setItemResponseMessage('❌ Please fill in Player ID and Item ID');
       return;
     }
     
     setItemResponseMessage('⏳ Sending...');
+    const sentItemId = itemId;
     
     try {
       const response = await fetch('/api/add-item', {
@@ -84,7 +85,7 @@ export default function Dashboard() {
         body: JSON.stringify({
           playerId: itemPlayerId,
           itemId: itemId,
-          quantity: parseInt(itemQuantity)
+          action: itemAction
         })
       });
 
@@ -95,7 +96,6 @@ export default function Dashboard() {
           id: itemTransactions.length + 1,
           player: itemPlayerId,
           itemId: itemId,
-          quantity: parseInt(itemQuantity),
           action: itemAction,
           date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         };
@@ -103,7 +103,7 @@ export default function Dashboard() {
         setItemTransactions([newTransaction, ...itemTransactions]);
         setItemPlayerId('');
         setItemId('');
-        setItemResponseMessage(`✅ Sent ${itemQuantity}x ${itemId}!`);
+        setItemResponseMessage(`✅ ${itemAction === 'add' ? 'Sent' : 'Removed'} ${sentItemId}!`);
       } else {
         setItemResponseMessage(`❌ Error: ${data.error}`);
       }
@@ -224,7 +224,7 @@ export default function Dashboard() {
           <div>
             <h1 className="text-4xl font-bold text-white mb-8">Players</h1>
             
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
               <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-4">
                 <p className="text-blue-300 text-sm">Total Players</p>
                 <p className="text-3xl font-bold text-white">1,254</p>
@@ -250,7 +250,7 @@ export default function Dashboard() {
           <div>
             <h1 className="text-4xl font-bold text-white mb-8">Analytics</h1>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
                 <h3 className="text-lg font-bold text-white mb-4">Daily Active Users</h3>
                 <div className="h-40 flex items-end justify-around gap-2">
@@ -268,16 +268,12 @@ export default function Dashboard() {
                     <span className="text-blue-400 font-bold">$2,450</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-300">Battle Pass</span>
-                    <span className="text-blue-400 font-bold">$890</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Premium Items</span>
+                    <span className="text-gray-300">Items</span>
                     <span className="text-blue-400 font-bold">$1,230</span>
                   </div>
                   <div className="border-t border-blue-500/30 pt-3 flex justify-between">
                     <span className="text-white font-bold">Total</span>
-                    <span className="text-blue-400 font-bold">$4,570</span>
+                    <span className="text-blue-400 font-bold">$3,680</span>
                   </div>
                 </div>
               </div>
@@ -285,12 +281,12 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Events Page */}
+        {/* Events - Main Page */}
         {page === 'events' && !eventsSubpage && (
           <div>
             <h1 className="text-4xl font-bold text-white mb-8">Events</h1>
             
-            <div className="flex gap-6 mb-8">
+            <div className="flex gap-6">
               <button
                 onClick={() => setEventsSubpage('reverbucks')}
                 className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all shadow-lg"
@@ -307,7 +303,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Events Reverbucks Subpage */}
+        {/* Events - Reverbucks */}
         {page === 'events' && eventsSubpage === 'reverbucks' && (
           <div>
             <button onClick={() => setEventsSubpage(null)} className="text-blue-400 hover:text-blue-300 mb-6 text-lg">← Back</button>
@@ -410,7 +406,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Events Items Subpage */}
+        {/* Events - Items */}
         {page === 'events' && eventsSubpage === 'items' && (
           <div>
             <button onClick={() => setEventsSubpage(null)} className="text-purple-400 hover:text-purple-300 mb-6 text-lg">← Back</button>
@@ -455,8 +451,6 @@ export default function Dashboard() {
                         <option value="remove">Remove</option>
                       </select>
                     </div>
-
-
 
                     <button
                       onClick={handleSendItem}
