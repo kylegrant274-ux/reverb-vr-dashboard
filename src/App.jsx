@@ -446,13 +446,25 @@ export default function Dashboard() {
                       />
                     </div>
 
+                    <div>
+                      <label className="block text-purple-300 text-sm mb-2">Action</label>
+                      <select
+                        value={itemAction}
+                        onChange={(e) => setItemAction(e.target.value)}
+                        className="w-full bg-black border border-purple-500/30 rounded px-3 py-2 text-white focus:outline-none focus:border-purple-500"
+                      >
+                        <option value="add">Add</option>
+                        <option value="remove">Remove</option>
+                      </select>
+                    </div>
+
 
 
                     <button
                       onClick={handleSendItem}
                       className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-2 px-4 rounded transition-all"
                     >
-                      Send Item
+                      {itemAction === 'add' ? 'Send' : 'Remove'} Item
                     </button>
 
                     {itemResponseMessage && (
@@ -479,7 +491,9 @@ export default function Dashboard() {
                             <p className="text-purple-300 text-sm">Item ID: {t.itemId}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-green-400 font-bold">Sent ✓</p>
+                            <p className={`font-bold ${t.action === 'add' ? 'text-green-400' : 'text-red-400'}`}>
+                              {t.action === 'add' ? 'Sent' : 'Removed'}
+                            </p>
                             <p className="text-gray-400 text-sm">{t.date}</p>
                           </div>
                         </div>
