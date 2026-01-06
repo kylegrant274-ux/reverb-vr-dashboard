@@ -16,7 +16,6 @@ export default function Dashboard() {
   // Items state
   const [itemPlayerId, setItemPlayerId] = useState('');
   const [itemId, setItemId] = useState('');
-  const [itemQuantity, setItemQuantity] = useState('');
   const [itemAction, setItemAction] = useState('add');
   const [itemTransactions, setItemTransactions] = useState([]);
   const [itemResponseMessage, setItemResponseMessage] = useState('');
