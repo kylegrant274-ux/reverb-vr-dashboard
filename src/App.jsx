@@ -103,7 +103,6 @@ export default function Dashboard() {
         setItemTransactions([newTransaction, ...itemTransactions]);
         setItemPlayerId('');
         setItemId('');
-        setItemQuantity('');
         setItemResponseMessage(`✅ Sent ${itemQuantity}x ${itemId}!`);
       } else {
         setItemResponseMessage(`❌ Error: ${data.error}`);
