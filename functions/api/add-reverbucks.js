@@ -4,19 +4,31 @@ export async function onRequestPost(context) {
   const { playerId, amount, action, reason } = await request.json();
 
   try {
-    const amountToSend = action === 'remove' ? -parseInt(amount) : parseInt(amount);
+    let endpoint, body;
 
-    const response = await fetch('https://1620F0.playfabapi.com/Server/AddUserVirtualCurrency', {
+    if (action === 'remove') {
+      endpoint = 'https://1620F0.playfabapi.com/Server/SubtractUserVirtualCurrency';
+      body = {
+        PlayFabId: playerId,
+        VirtualCurrency: 'RB',
+        Amount: parseInt(amount)
+      };
+    } else {
+      endpoint = 'https://1620F0.playfabapi.com/Server/AddUserVirtualCurrency';
+      body = {
+        PlayFabId: playerId,
+        VirtualCurrency: 'RB',
+        Amount: parseInt(amount)
+      };
+    }
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-SecretKey': 'WS6N34UHIP64N56QEGX45UGXT59GQE9PDPFM9WTQ1AA7GMIEZ7'
       },
-      body: JSON.stringify({
-        PlayFabId: playerId,
-        VirtualCurrency: 'RB',
-        Amount: amountToSend
-      })
+      body: JSON.stringify(body)
     });
 
     const text = await response.text();
