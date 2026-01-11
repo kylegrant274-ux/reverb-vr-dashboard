@@ -1,7 +1,14 @@
+// functions/api/add-item.js
 export async function onRequestPost(context) {
   const { request } = context;
-  
   const { playerId, itemId, action } = await request.json();
+
+  if (!playerId || !itemId || !action) {
+    return new Response(JSON.stringify({ success: false, error: 'Missing parameters' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 
   try {
     if (action === 'add') {
@@ -13,25 +20,24 @@ export async function onRequestPost(context) {
         },
         body: JSON.stringify({
           PlayFabId: playerId,
-          ItemIds: [itemId],
-          CatalogVersion: 'Items'
+          ItemIds: [itemId],          // <-- regular ItemId
+          CatalogVersion: 'Items'     // <-- your catalog
         })
       });
 
-      const text = await response.text();
-      let data = JSON.parse(text);
+      const data = await response.json();
 
       if (data.code === 200) {
-        return new Response(JSON.stringify({ success: true, data }), {
-          headers: { 'Content-Type': 'application/json' }
-        });
-      } else {
-        return new Response(JSON.stringify({ success: false, error: data.errorMessage || JSON.stringify(data) }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        });
+        return new Response(JSON.stringify({ success: true, data }), { headers: { 'Content-Type': 'application/json' } });
       }
-    } else {
+
+      return new Response(JSON.stringify({ success: false, error: data.errorMessage || JSON.stringify(data) }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+    } else if (action === 'remove') {
+      // Get inventory first
       const invResponse = await fetch('https://1620F0.playfabapi.com/Server/GetUserInventory', {
         method: 'POST',
         headers: {
@@ -41,22 +47,14 @@ export async function onRequestPost(context) {
         body: JSON.stringify({ PlayFabId: playerId })
       });
 
-      const invText = await invResponse.text();
-      let invData = JSON.parse(invText);
+      const invData = await invResponse.json();
 
-      if (invData.code !== 200) {
-        return new Response(JSON.stringify({ success: false, error: 'Failed to get inventory' }), {
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
+      if (invData.code !== 200) throw new Error('Failed to get inventory');
 
       const item = invData.data.Inventory.find(i => i.ItemId === itemId);
-      if (!item) {
-        return new Response(JSON.stringify({ success: false, error: 'Item not found' }), {
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
+      if (!item) throw new Error('Item not found in inventory');
 
+      // Revoke by ItemInstanceId
       const revokeResponse = await fetch('https://1620F0.playfabapi.com/Server/RevokeInventoryItems', {
         method: 'POST',
         headers: {
@@ -69,20 +67,23 @@ export async function onRequestPost(context) {
         })
       });
 
-      const revokeText = await revokeResponse.text();
-      let revokeData = JSON.parse(revokeText);
+      const revokeData = await revokeResponse.json();
 
       if (revokeData.code === 200) {
-        return new Response(JSON.stringify({ success: true, data: revokeData }), {
-          headers: { 'Content-Type': 'application/json' }
-        });
-      } else {
-        return new Response(JSON.stringify({ success: false, error: revokeData.errorMessage || JSON.stringify(revokeData) }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        });
+        return new Response(JSON.stringify({ success: true, data: revokeData }), { headers: { 'Content-Type': 'application/json' } });
       }
+
+      return new Response(JSON.stringify({ success: false, error: revokeData.errorMessage || JSON.stringify(revokeData) }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
+
+    return new Response(JSON.stringify({ success: false, error: 'Invalid action' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
   } catch (error) {
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       status: 500,

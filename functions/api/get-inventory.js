@@ -1,7 +1,14 @@
+// functions/api/get-inventory.js
 export async function onRequestPost(context) {
   const { request } = context;
-  
   const { playerId } = await request.json();
+
+  if (!playerId) {
+    return new Response(JSON.stringify({ success: false, error: 'Missing playerId' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 
   try {
     const response = await fetch('https://1620F0.playfabapi.com/Server/GetUserInventory', {
@@ -14,17 +21,19 @@ export async function onRequestPost(context) {
     });
 
     const text = await response.text();
-    let data = JSON.parse(text);
+    const data = JSON.parse(text);
 
-    if (data.code === 200) {
-      return new Response(JSON.stringify({ success: true, inventory: data.data.Inventory || [] }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    } else {
-      return new Response(JSON.stringify({ success: false, error: data.errorMessage }), {
+    if (data.code === 200 && data.data) {
+      return new Response(JSON.stringify({ success: true, inventory: data.data.Inventory || [], virtualCurrency: data.data.VirtualCurrency || {} }), {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    return new Response(JSON.stringify({ success: false, error: data.errorMessage || 'Failed to get inventory' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
   } catch (error) {
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       status: 500,
