@@ -19,8 +19,10 @@ export default function Dashboard() {
   const [itemAction, setItemAction] = useState('add');
   const [itemTransactions, setItemTransactions] = useState([]);
   const [itemResponseMessage, setItemResponseMessage] = useState('');
-
-  const handleSendRB = async () => {
+  
+  // Player search state
+  const [playerSearchResults, setPlayerSearchResults] = useState([]);
+  const [playerSearchLoading, setPlayerSearchLoading] = useState(false);  const handleSendRB = async () => {
     if (!rbPlayerId || !rbAmount) {
       setRbResponseMessage('❌ Please fill in Player ID and amount');
       return;
@@ -110,6 +112,37 @@ export default function Dashboard() {
     } catch (error) {
       setItemResponseMessage(`❌ Error: ${error.message}`);
     }
+  };
+
+  const handleSearchPlayer = async (searchQuery) => {
+    if (!searchQuery.trim()) {
+      setPlayerSearchResults([]);
+      return;
+    }
+
+    setPlayerSearchLoading(true);
+    try {
+      const response = await fetch('/api/search-player', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: searchQuery
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setPlayerSearchResults(data.players || []);
+      } else {
+        setPlayerSearchResults([]);
+      }
+    } catch (error) {
+      setPlayerSearchResults([]);
+    }
+    setPlayerSearchLoading(false);
   };
 
   const totalRB = rbTransactions.reduce((sum, t) => sum + t.amount, 0);
@@ -222,24 +255,38 @@ export default function Dashboard() {
         {/* Players Page */}
         {page === 'players' && (
           <div>
-            <h1 className="text-4xl font-bold text-white mb-8">Players</h1>
+            <h1 className="text-4xl font-bold text-white mb-8">Player Search</h1>
             
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-4">
-                <p className="text-blue-300 text-sm">Total Players</p>
-                <p className="text-3xl font-bold text-white">1,254</p>
+            <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6 mb-8">
+              <div className="flex gap-4">
+                <input
+                  type="text"
+                  placeholder="Search by Player ID or Username..."
+                  onKeyUp={(e) => handleSearchPlayer(e.target.value)}
+                  className="flex-1 bg-black border border-blue-500/30 rounded px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                />
               </div>
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-4">
-                <p className="text-blue-300 text-sm">Active Today</p>
-                <p className="text-3xl font-bold text-white">342</p>
-              </div>
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-4">
-                <p className="text-blue-300 text-sm">New Players</p>
-                <p className="text-3xl font-bold text-white">45</p>
-              </div>
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-4">
-                <p className="text-blue-300 text-sm">Avg Session</p>
-                <p className="text-3xl font-bold text-white">32m</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
+              <h2 className="text-xl font-bold text-white mb-4">Search Results</h2>
+              <div className="space-y-3">
+                {playerSearchLoading && <p className="text-gray-400 text-center py-8">Searching...</p>}
+                {!playerSearchLoading && playerSearchResults.length === 0 && (
+                  <p className="text-gray-400 text-center py-8">Enter a Player ID or Username to search</p>
+                )}
+                {playerSearchResults.map((player) => (
+                  <div key={player.PlayFabId} className="bg-blue-900/20 border border-blue-500/20 rounded p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-white font-semibold">{player.DisplayName || player.PlayFabId}</p>
+                        <p className="text-blue-300 text-sm">ID: {player.PlayFabId}</p>
+                        {player.Created && <p className="text-gray-400 text-sm">Joined: {new Date(player.Created).toLocaleDateString()}</p>}
+                      </div>
+                      <span className="bg-green-500/20 text-green-300 px-3 py-1 rounded text-sm">Active</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
