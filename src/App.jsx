@@ -22,7 +22,14 @@ export default function Dashboard() {
   
   // Player search state
   const [playerSearchResults, setPlayerSearchResults] = useState([]);
-  const [playerSearchLoading, setPlayerSearchLoading] = useState(false);  const handleSendRB = async () => {
+  const [playerSearchLoading, setPlayerSearchLoading] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [playerInventory, setPlayerInventory] = useState([]);
+  const [quickRBAmount, setQuickRBAmount] = useState('');
+  const [quickRBAction, setQuickRBAction] = useState('add');
+  const [quickItemId, setQuickItemId] = useState('');
+  const [quickItemAction, setQuickItemAction] = useState('add');
+  const [playerActionMessage, setPlayerActionMessage] = useState('');  const handleSendRB = async () => {
     if (!rbPlayerId || !rbAmount) {
       setRbResponseMessage('❌ Please fill in Player ID and amount');
       return;
@@ -145,6 +152,127 @@ export default function Dashboard() {
     setPlayerSearchLoading(false);
   };
 
+  const handleSelectPlayer = async (player) => {
+    setSelectedPlayer(player);
+    setPlayerActionMessage('');
+    setQuickRBAmount('');
+    setQuickItemId('');
+    
+    // Load inventory
+    try {
+      const response = await fetch('/api/get-inventory', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playerId: player.PlayFabId
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setPlayerInventory(data.inventory || []);
+      }
+    } catch (error) {
+      setPlayerInventory([]);
+    }
+  };
+
+  const handleQuickRB = async () => {
+    if (!quickRBAmount) {
+      setPlayerActionMessage('❌ Enter an amount');
+      return;
+    }
+
+    setPlayerActionMessage('⏳ Sending...');
+    try {
+      const response = await fetch('/api/add-reverbucks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playerId: selectedPlayer.PlayFabId,
+          amount: parseInt(quickRBAmount),
+          action: quickRBAction,
+          reason: 'Admin grant'
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setPlayerActionMessage(`✅ ${quickRBAction === 'add' ? 'Gave' : 'Removed'} ${quickRBAmount} RB!`);
+        setQuickRBAmount('');
+      } else {
+        setPlayerActionMessage(`❌ Error: ${data.error}`);
+      }
+    } catch (error) {
+      setPlayerActionMessage(`❌ Error: ${error.message}`);
+    }
+  };
+
+  const handleQuickItem = async () => {
+    if (!quickItemId) {
+      setPlayerActionMessage('❌ Enter an item ID');
+      return;
+    }
+
+    setPlayerActionMessage('⏳ Sending...');
+    try {
+      const response = await fetch('/api/add-item', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playerId: selectedPlayer.PlayFabId,
+          itemId: quickItemId,
+          action: quickItemAction
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setPlayerActionMessage(`✅ ${quickItemAction === 'add' ? 'Gave' : 'Removed'} ${quickItemId}!`);
+        setQuickItemId('');
+        // Reload inventory
+        handleSelectPlayer(selectedPlayer);
+      } else {
+        setPlayerActionMessage(`❌ Error: ${data.error}`);
+      }
+    } catch (error) {
+      setPlayerActionMessage(`❌ Error: ${error.message}`);
+    }
+  };
+
+  const handleBanPlayer = async () => {
+    if (!window.confirm(`Ban ${selectedPlayer.DisplayName}?`)) return;
+
+    setPlayerActionMessage('⏳ Banning...');
+    try {
+      const response = await fetch('/api/ban-player', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playerId: selectedPlayer.PlayFabId
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setPlayerActionMessage('✅ Player banned!');
+        setSelectedPlayer(null);
+      } else {
+        setPlayerActionMessage(`❌ Error: ${data.error}`);
+      }
+    } catch (error) {
+      setPlayerActionMessage(`❌ Error: ${error.message}`);
+    }
+  };
+
   const totalRB = rbTransactions.reduce((sum, t) => sum + t.amount, 0);
 
   return (
@@ -253,7 +381,7 @@ export default function Dashboard() {
         )}
 
         {/* Players Page */}
-        {page === 'players' && (
+        {page === 'players' && !selectedPlayer && (
           <div>
             <h1 className="text-4xl font-bold text-white mb-8">Player Search</h1>
             
@@ -276,7 +404,11 @@ export default function Dashboard() {
                   <p className="text-gray-400 text-center py-8">Enter a Player ID or Username to search</p>
                 )}
                 {playerSearchResults.map((player) => (
-                  <div key={player.PlayFabId} className="bg-blue-900/20 border border-blue-500/20 rounded p-4">
+                  <button
+                    key={player.PlayFabId}
+                    onClick={() => handleSelectPlayer(player)}
+                    className="w-full text-left bg-blue-900/20 border border-blue-500/20 rounded p-4 hover:bg-blue-900/40 transition-all"
+                  >
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="text-white font-semibold">{player.DisplayName || player.PlayFabId}</p>
@@ -285,8 +417,114 @@ export default function Dashboard() {
                       </div>
                       <span className="bg-green-500/20 text-green-300 px-3 py-1 rounded text-sm">Active</span>
                     </div>
-                  </div>
+                  </button>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Player Detail Page */}
+        {page === 'players' && selectedPlayer && (
+          <div>
+            <button onClick={() => setSelectedPlayer(null)} className="text-blue-400 hover:text-blue-300 mb-6 text-lg">← Back to Search</button>
+            <h1 className="text-4xl font-bold text-white mb-8">{selectedPlayer.DisplayName || selectedPlayer.PlayFabId}</h1>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Panel - Actions */}
+              <div className="lg:col-span-1 space-y-6">
+                {/* Give Reverbucks */}
+                <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
+                  <h3 className="text-lg font-bold text-white mb-4">Give Reverbucks</h3>
+                  <div className="space-y-3">
+                    <select
+                      value={quickRBAction}
+                      onChange={(e) => setQuickRBAction(e.target.value)}
+                      className="w-full bg-black border border-blue-500/30 rounded px-3 py-2 text-white"
+                    >
+                      <option value="add">Give</option>
+                      <option value="remove">Remove</option>
+                    </select>
+                    <input
+                      type="number"
+                      value={quickRBAmount}
+                      onChange={(e) => setQuickRBAmount(e.target.value)}
+                      placeholder="Amount"
+                      className="w-full bg-black border border-blue-500/30 rounded px-3 py-2 text-white"
+                    />
+                    <button
+                      onClick={handleQuickRB}
+                      className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-2 rounded"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+
+                {/* Give Item */}
+                <div className="bg-gradient-to-br from-purple-900/40 to-purple-800/20 border border-purple-500/30 rounded-lg p-6">
+                  <h3 className="text-lg font-bold text-white mb-4">Give Item</h3>
+                  <div className="space-y-3">
+                    <select
+                      value={quickItemAction}
+                      onChange={(e) => setQuickItemAction(e.target.value)}
+                      className="w-full bg-black border border-purple-500/30 rounded px-3 py-2 text-white"
+                    >
+                      <option value="add">Give</option>
+                      <option value="remove">Remove</option>
+                    </select>
+                    <input
+                      type="text"
+                      value={quickItemId}
+                      onChange={(e) => setQuickItemId(e.target.value)}
+                      placeholder="Item ID"
+                      className="w-full bg-black border border-purple-500/30 rounded px-3 py-2 text-white"
+                    />
+                    <button
+                      onClick={handleQuickItem}
+                      className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold py-2 rounded"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+
+                {/* Ban Player */}
+                <button
+                  onClick={handleBanPlayer}
+                  className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-bold py-3 rounded-lg"
+                >
+                  Ban Player
+                </button>
+
+                {playerActionMessage && (
+                  <div className="text-sm p-3 bg-blue-900/30 rounded border border-blue-500/30 text-blue-300">
+                    {playerActionMessage}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Panel - Inventory */}
+              <div className="lg:col-span-2">
+                <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-500/30 rounded-lg p-6">
+                  <h3 className="text-lg font-bold text-white mb-4">Inventory</h3>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {playerInventory.length === 0 ? (
+                      <p className="text-gray-400">No items in inventory</p>
+                    ) : (
+                      playerInventory.map((item, idx) => (
+                        <div key={idx} className="bg-blue-900/20 border border-blue-500/20 rounded p-3">
+                          <p className="text-white font-semibold">{item.DisplayName || item.ItemId}</p>
+                          <div className="text-sm text-gray-400 mt-1">
+                            <p>Item ID: {item.ItemId}</p>
+                            <p>Instance ID: {item.ItemInstanceId}</p>
+                            {item.PurchaseDate && <p>Purchased: {new Date(item.PurchaseDate).toLocaleDateString()}</p>}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
