@@ -90,10 +90,3 @@ export async function onRequestPost(context) {
     });
   }
 }
-```
-
-Push:
-```
-git add .
-git commit -m "fix add-item with correct playfab flow"
-git push
