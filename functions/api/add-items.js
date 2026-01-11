@@ -5,7 +5,6 @@ export async function onRequestPost(context) {
 
   try {
     if (action === 'add') {
-      // Add item with correct catalog version
       const response = await fetch('https://1620F0.playfabapi.com/Server/GrantItemsToUser', {
         method: 'POST',
         headers: {
@@ -20,19 +19,19 @@ export async function onRequestPost(context) {
       });
 
       const text = await response.text();
-      const data = JSON.parse(text);
+      let data = JSON.parse(text);
 
       if (data.code === 200) {
-        return new Response(JSON.stringify({ success: true }), {
+        return new Response(JSON.stringify({ success: true, data }), {
           headers: { 'Content-Type': 'application/json' }
         });
       } else {
-        return new Response(JSON.stringify({ success: false, error: data.errorMessage }), {
+        return new Response(JSON.stringify({ success: false, error: data.errorMessage || JSON.stringify(data) }), {
+          status: 400,
           headers: { 'Content-Type': 'application/json' }
         });
       }
     } else {
-      // Remove item - first get inventory to find ItemInstanceId
       const invResponse = await fetch('https://1620F0.playfabapi.com/Server/GetUserInventory', {
         method: 'POST',
         headers: {
@@ -43,7 +42,7 @@ export async function onRequestPost(context) {
       });
 
       const invText = await invResponse.text();
-      const invData = JSON.parse(invText);
+      let invData = JSON.parse(invText);
 
       if (invData.code !== 200) {
         return new Response(JSON.stringify({ success: false, error: 'Failed to get inventory' }), {
@@ -53,12 +52,11 @@ export async function onRequestPost(context) {
 
       const item = invData.data.Inventory.find(i => i.ItemId === itemId);
       if (!item) {
-        return new Response(JSON.stringify({ success: false, error: 'Item not found in inventory' }), {
+        return new Response(JSON.stringify({ success: false, error: 'Item not found' }), {
           headers: { 'Content-Type': 'application/json' }
         });
       }
 
-      // Now revoke the item using its instance ID
       const revokeResponse = await fetch('https://1620F0.playfabapi.com/Server/RevokeInventoryItems', {
         method: 'POST',
         headers: {
@@ -72,20 +70,22 @@ export async function onRequestPost(context) {
       });
 
       const revokeText = await revokeResponse.text();
-      const revokeData = JSON.parse(revokeText);
+      let revokeData = JSON.parse(revokeText);
 
       if (revokeData.code === 200) {
-        return new Response(JSON.stringify({ success: true }), {
+        return new Response(JSON.stringify({ success: true, data: revokeData }), {
           headers: { 'Content-Type': 'application/json' }
         });
       } else {
-        return new Response(JSON.stringify({ success: false, error: revokeData.errorMessage }), {
+        return new Response(JSON.stringify({ success: false, error: revokeData.errorMessage || JSON.stringify(revokeData) }), {
+          status: 400,
           headers: { 'Content-Type': 'application/json' }
         });
       }
     }
   } catch (error) {
     return new Response(JSON.stringify({ success: false, error: error.message }), {
+      status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
