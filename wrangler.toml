@@ -1,0 +1,8 @@
+name = "reverb-vr-dashboard"
+type = "javascript"
+compatibility_date = "2024-01-04"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "reverb-game"
+database_id = "92e23b31-8744-4a37-a7c2-1cbec34afca9"
