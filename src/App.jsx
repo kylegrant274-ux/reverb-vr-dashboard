@@ -29,7 +29,12 @@ export default function Dashboard() {
   const [quickRBAction, setQuickRBAction] = useState('add');
   const [quickItemId, setQuickItemId] = useState('');
   const [quickItemAction, setQuickItemAction] = useState('add');
-  const [playerActionMessage, setPlayerActionMessage] = useState('');  const handleSendRB = async () => {
+  const [playerActionMessage, setPlayerActionMessage] = useState('');
+
+  // Load all players on mount
+  React.useEffect(() => {
+    loadAllPlayers();
+  }, []);  const handleSendRB = async () => {
     if (!rbPlayerId || !rbAmount) {
       setRbResponseMessage('❌ Please fill in Player ID and amount');
       return;
@@ -121,35 +126,31 @@ export default function Dashboard() {
     }
   };
 
-  const handleSearchPlayer = async (searchQuery) => {
+  const loadAllPlayers = async () => {
+    setPlayerSearchLoading(true);
+    try {
+      const response = await fetch('/api/get-all-players');
+      const data = await response.json();
+      if (data.success) {
+        setPlayerSearchResults(data.players || []);
+      }
+    } catch (error) {
+      console.error('Failed to load players:', error);
+    }
+    setPlayerSearchLoading(false);
+  };
+
+  const handleSearchPlayer = (searchQuery) => {
     if (!searchQuery.trim()) {
-      setPlayerSearchResults([]);
+      loadAllPlayers();
       return;
     }
 
-    setPlayerSearchLoading(true);
-    try {
-      const response = await fetch('/api/search-player', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: searchQuery
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setPlayerSearchResults(data.players || []);
-      } else {
-        setPlayerSearchResults([]);
-      }
-    } catch (error) {
-      setPlayerSearchResults([]);
-    }
-    setPlayerSearchLoading(false);
+    const filtered = playerSearchResults.filter(p => 
+      p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.displayName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setPlayerSearchResults(filtered);
   };
 
   const handleSelectPlayer = async (player) => {
@@ -158,7 +159,7 @@ export default function Dashboard() {
     setQuickRBAmount('');
     setQuickItemId('');
     
-    // Load inventory
+    // Load inventory - using custom player ID
     try {
       const response = await fetch('/api/get-inventory', {
         method: 'POST',
@@ -166,7 +167,7 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          playerId: player.PlayFabId
+          playerId: player.id
         })
       });
 
@@ -193,7 +194,7 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          playerId: selectedPlayer.PlayFabId,
+          playerId: selectedPlayer.id,
           amount: parseInt(quickRBAmount),
           action: quickRBAction,
           reason: 'Admin grant'
@@ -226,7 +227,7 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          playerId: selectedPlayer.PlayFabId,
+          playerId: selectedPlayer.id,
           itemId: quickItemId,
           action: quickItemAction
         })
@@ -247,7 +248,7 @@ export default function Dashboard() {
   };
 
   const handleBanPlayer = async () => {
-    if (!window.confirm(`Ban ${selectedPlayer.DisplayName}?`)) return;
+    if (!window.confirm(`Ban ${selectedPlayer.displayName}?`)) return;
 
     setPlayerActionMessage('⏳ Banning...');
     try {
@@ -257,7 +258,7 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          playerId: selectedPlayer.PlayFabId
+          playerId: selectedPlayer.id
         })
       });
 
@@ -265,6 +266,7 @@ export default function Dashboard() {
       if (data.success) {
         setPlayerActionMessage('✅ Player banned!');
         setSelectedPlayer(null);
+        loadAllPlayers();
       } else {
         setPlayerActionMessage(`❌ Error: ${data.error}`);
       }
@@ -405,15 +407,15 @@ export default function Dashboard() {
                 )}
                 {playerSearchResults.map((player) => (
                   <button
-                    key={player.PlayFabId}
+                    key={player.id}
                     onClick={() => handleSelectPlayer(player)}
                     className="w-full text-left bg-blue-900/20 border border-blue-500/20 rounded p-4 hover:bg-blue-900/40 transition-all"
                   >
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="text-white font-semibold">{player.DisplayName || player.PlayFabId}</p>
-                        <p className="text-blue-300 text-sm">ID: {player.PlayFabId}</p>
-                        {player.Created && <p className="text-gray-400 text-sm">Joined: {new Date(player.Created).toLocaleDateString()}</p>}
+                        <p className="text-white font-semibold">{player.displayName}</p>
+                        <p className="text-blue-300 text-sm">ID: {player.id}</p>
+                        <p className="text-gray-400 text-sm">Joined: {new Date(player.created).toLocaleDateString()}</p>
                       </div>
                       <span className="bg-green-500/20 text-green-300 px-3 py-1 rounded text-sm">Active</span>
                     </div>
@@ -427,8 +429,9 @@ export default function Dashboard() {
         {/* Player Detail Page */}
         {page === 'players' && selectedPlayer && (
           <div>
-            <button onClick={() => setSelectedPlayer(null)} className="text-blue-400 hover:text-blue-300 mb-6 text-lg">← Back to Search</button>
-            <h1 className="text-4xl font-bold text-white mb-8">{selectedPlayer.DisplayName || selectedPlayer.PlayFabId}</h1>
+            <button onClick={() => setSelectedPlayer(null)} className="text-blue-400 hover:text-blue-300 mb-6 text-lg">← Back to Players</button>
+            <h1 className="text-4xl font-bold text-white mb-2">{selectedPlayer.displayName}</h1>
+            <p className="text-blue-300 mb-8">ID: {selectedPlayer.id}</p>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Panel - Actions */}
